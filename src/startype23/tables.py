@@ -14,7 +14,6 @@ from .formatting import (
     _ALL_SIZE_COLUMNS,
     _COL_COUNT,
     _COL_DISTRIBUTION,
-    _COL_EXTENSION,
     _COL_FILETYPE,
     _COL_PERCENTAGE,
     _COL_SIZE,

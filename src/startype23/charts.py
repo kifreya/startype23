@@ -14,7 +14,6 @@ from .formatting import (
     ColumnSet,
     _format_count,
     _format_size,
-    resolve_columns,
 )
 from .tables import render_legend, render_size_table, render_table
 
