@@ -4,6 +4,7 @@ import os
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 # Default directory names to skip during traversal.
 DEFAULT_EXCLUDE_DIRS: set[str] = {
@@ -38,6 +39,7 @@ def scan_directory(
     path: str = ".",
     exclude_dirs: set[str] | None = None,
     include_hidden: bool = False,
+    progress_callback: Callable[[int], None] | None = None,
 ) -> list[FileTypeInfo]:
     """Walk *path* and aggregate file counts by extension.
 
@@ -89,6 +91,9 @@ def scan_directory(
                 size_map[ext] = size_map.get(ext, 0) + filepath.stat().st_size
             except OSError:
                 pass
+
+        if progress_callback is not None:
+            progress_callback(sum(counter.values()))
 
     total_files = sum(counter.values())
     total_size_all = sum(size_map.values())

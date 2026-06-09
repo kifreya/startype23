@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import click
+from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from .analyzer import scan_directory
 from .charts import render_chart
@@ -96,11 +97,22 @@ def main(
     exclude_set: set[str] = set(exclude) if exclude else set()
 
     try:
-        infos = scan_directory(
-            path=str(target),
-            exclude_dirs=exclude_set if exclude_set else None,
-            include_hidden=include_hidden,
-        )
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Scanning...", total=None)
+
+            def progress_callback(count: int) -> None:
+                progress.update(task, description=f"Scanning... {count} files found")
+
+            infos = scan_directory(
+                path=str(target),
+                exclude_dirs=exclude_set if exclude_set else None,
+                include_hidden=include_hidden,
+                progress_callback=progress_callback,
+            )
     except NotADirectoryError as exc:
         click.echo(f"Error: {exc}", err=True)
         raise SystemExit(1)
