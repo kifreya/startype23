@@ -1,18 +1,27 @@
-"""Color generation with golden-angle hue distribution and luminance safety."""
+"""Color generation with 3D golden-ratio distribution and luminance safety."""
 
 import colorsys
 from collections.abc import Sequence
 
 from .analyzer import FileTypeInfo
 
-_GOLDEN_ANGLE = 137.508  # degrees -- optimal spacing around the colour wheel
-_MIN_HUE_GAP = 25  # degrees -- safety threshold to avoid lookalikes
-_SATURATION = 0.70  # HSL saturation (vivid but not neon)
-_LIGHTNESS = 0.58  # HSL lightness (visible on both light and dark backgrounds)
+# Golden-angle hue spacing -- optimal around the colour wheel.
+_GOLDEN_ANGLE = 137.508  # degrees
+
+# Golden-ratio constants for cycling saturation and lightness independently.
+# These are irrational relative to the golden angle, so the three HSL
+# dimensions drift apart and create well-separated colours.
+_GOLDEN_CONJUGATE = 0.618034  # 1 / phi
+_GOLDEN_COMPLEMENT = 0.381966  # 1 - conjugate
+
+_SAT_BASE = 0.60
+_SAT_RANGE = 0.25  # sat varies 0.60 - 0.85
+_LIT_BASE = 0.45
+_LIT_RANGE = 0.25  # lit varies 0.45 - 0.70
 
 
 def _hsl_to_hex(hue_deg: float, saturation: float, lightness: float) -> str:
-    """Convert HLS (0-1 range) to a hex colour string like ``"#7CB342"``."""
+    """Convert HLS values to a hex colour string like ``"#7CB342"``."""
     r, g, b = colorsys.hls_to_rgb(hue_deg / 360.0, lightness, saturation)
     return f"#{round(r * 255):02X}{round(g * 255):02X}{round(b * 255):02X}"
 
@@ -28,55 +37,44 @@ def _luminance(hex_color: str) -> float:
     return 0.2126 * linearise(r) + 0.7152 * linearise(g) + 0.0722 * linearise(b)
 
 
-def _generate_colour(n: int, assigned_hues: list[float]) -> str:
-    """Return the *n*th colour in the sequence, avoiding hue collisions."""
+def _generate_colour(n: int) -> str:
+    """Return the *n*th colour in a perceptually varied sequence.
+
+    Hue is spread via the golden angle.  Saturation and lightness drift
+    independently using golden-ratio multiples, so colours stay visually
+    distinct even when their hues are close.
+    """
     hue = (n * _GOLDEN_ANGLE) % 360.0
+    sat = _SAT_BASE + (n * _GOLDEN_CONJUGATE) % 1.0 * _SAT_RANGE
+    lit = _LIT_BASE + (n * _GOLDEN_COMPLEMENT) % 1.0 * _LIT_RANGE
 
-    # Nudge away from any previously assigned hue that is too close.
-    for _ in range(12):
-        if any(abs(hue - h) < _MIN_HUE_GAP for h in assigned_hues):
-            hue = (hue + _MIN_HUE_GAP) % 360.0
-        else:
-            break
+    hex_colour = _hsl_to_hex(hue, sat, lit)
 
-    assigned_hues.append(hue)
-    hex_colour = _hsl_to_hex(hue, _SATURATION, _LIGHTNESS)
-
-    # Safety net: if the colour has poor contrast against a dark background
-    # (luminance too low) or a light background (luminance too high), adjust
-    # lightness and regenerate.
+    # Safety net: ensure the colour is readable on both light and dark terminals.
     lum = _luminance(hex_colour)
 
     if lum < 0.15:
-        # Too dark on a dark terminal -- boost lightness.
         for boost in range(1, 10):
-            candidate = _hsl_to_hex(
-                hue, _SATURATION, min(_LIGHTNESS + boost * 0.04, 0.85)
-            )
+            candidate = _hsl_to_hex(hue, sat, min(lit + boost * 0.04, 0.85))
             if _luminance(candidate) >= 0.20:
-                hex_colour = candidate
-                break
+                return candidate
     elif lum > 0.80:
-        # Too bright on a light terminal -- reduce lightness.
         for cut in range(1, 10):
-            candidate = _hsl_to_hex(
-                hue, _SATURATION, max(_LIGHTNESS - cut * 0.04, 0.15)
-            )
+            candidate = _hsl_to_hex(hue, sat, max(lit - cut * 0.04, 0.15))
             if _luminance(candidate) <= 0.70:
-                hex_colour = candidate
-                break
+                return candidate
 
     return hex_colour
 
 
 def assign_colors(infos: Sequence[FileTypeInfo]) -> dict[str, str]:
-    """Map every extension in *infos* to a visually distinct, background-safe colour.
+    """Map every extension to a visually distinct, background-safe colour.
 
-    Colours are generated dynamically using golden-angle hue distribution,
-    with collision avoidance and luminance safety nets.
+    Colours are generated using golden-ratio-based distribution across all
+    three HSL dimensions (hue, saturation, lightness), producing clear
+    distinction well beyond 18 file types.
     """
-    assigned_hues: list[float] = []
     mapping: dict[str, str] = {}
     for idx, info in enumerate(infos):
-        mapping[info.extension] = _generate_colour(idx, assigned_hues)
+        mapping[info.extension] = _generate_colour(idx)
     return mapping
