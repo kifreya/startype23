@@ -16,17 +16,27 @@ colourful file-type distribution chart in the terminal.
   default.
 - Flat-design pastel colour palette (no neon).
 
+## Installation
+
+```bash
+uv tool install startype23
+# or via pip:
+pip install startype23
+```
+
+After installation, both `startype23` and `st23` are available globally.
+
 ## Usage
 
 ```
-uv run startype23 (or st23)              scan current directory
-uv run startype23 --size                  scan by disk size
-uv run startype23 --path /some/dir        scan a specific directory
-uv run startype23 --include-hidden        include dotfiles
-uv run startype23 --explain .py           look up an extension
-uv run startype23 --explain py            leading dot is optional
-uv run startype23 --exclude build         skip extra directories
-uv run startype23 --count --percentage    show only selected columns
+startype23 (or st23)                    scan current directory
+startype23 --size                       scan by disk size
+startype23 --path /some/dir             scan a specific directory
+startype23 --include-hidden             include dotfiles
+startype23 --explain .py                look up an extension
+startype23 --explain py                 leading dot is optional
+startype23 --exclude build              skip extra directories
+startype23 --count --percentage         show only selected columns
 ```
 
 | Flag                       | Description                                   |
