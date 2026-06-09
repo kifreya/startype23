@@ -55,9 +55,3 @@ given, only those (plus Extension) are shown.
 - **Wikipedia's List of filename extensions** -- source for the ~500-entry
   extension lookup table.
 
-## Publishing
-
-```bash
-uv build
-uv publish --token pypi-xxxxxxxx
-```
