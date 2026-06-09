@@ -1,5 +1,7 @@
 # StarType23
 
+![StarType23 screenshot](src/media/powershell_screenshot.png)
+
 A CLI tool that walks a directory, counts files by extension, and renders a
 colourful file-type distribution chart in the terminal.
 
