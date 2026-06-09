@@ -27,9 +27,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/startype23/startype23"
-Source = "https://github.com/startype23/startype23"
-"Bug tracker" = "https://github.com/startype23/startype23/issues"
+Homepage = "https://github.com/kifreya/startype23"
+Source = "https://github.com/kifreya/startype23"
+"Bug tracker" = "https://github.com/kifreya/startype23/issues"
 
 [project.scripts]
 startype23 = "startype23.cli:main"
