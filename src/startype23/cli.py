@@ -5,9 +5,9 @@ from pathlib import Path
 import click
 
 from .analyzer import scan_directory
-from .charts import render_chart, render_explain
+from .charts import render_chart
+from .tables import render_explain_table
 
-# Sentinel for "no column flags given".
 _NONE = "__none__"
 
 
@@ -86,13 +86,9 @@ def main(
     col_percentage: str | None = _NONE,
     col_distribution: str | None = _NONE,
 ) -> None:
-    """Analyze file types in a directory and display a colourful chart.
-
-    Walks the directory tree, counts files by extension, and renders a
-    terminal-based chart with a stacked proportion bar and a detailed table.
-    """
+    """Analyze file types in a directory and display a colourful chart."""
     if explain is not None:
-        render_explain(explain)
+        render_explain_table(explain)
         return
 
     target = Path(path).resolve()
@@ -109,7 +105,6 @@ def main(
         click.echo(f"Error: {exc}", err=True)
         raise SystemExit(1)
 
-    # Build column filter set from the individual flags.
     col_values = [
         v
         for v in (col_filetype, col_count, col_percentage, col_distribution)
