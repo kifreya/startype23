@@ -44,6 +44,22 @@ def _format_size(size_bytes: int) -> str:
     return f"{remaining:.1f} {_SIZE_SUFFIXES[magnitude]}"
 
 
+def _format_count(n: int) -> str:
+    """Format an integer with French spacing (space every 3 digits).
+
+    ``1234567`` becomes ``"1 234 567"``.
+    """
+    if n < 0:
+        return f"-{_format_count(-n)}"
+    s = str(n)
+    parts = []
+    while len(s) > 3:
+        parts.append(s[-3:])
+        s = s[:-3]
+    parts.append(s)
+    return " ".join(reversed(parts))
+
+
 def normalize_extension(ext: str) -> str:
     """Ensure an extension string has a leading dot, lowercased.
 

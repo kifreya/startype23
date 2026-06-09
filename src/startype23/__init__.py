@@ -1,3 +1,3 @@
 """StarType23 -- A CLI tool for colourful file type distribution charts."""
 
-__version__ = "1.1.3"
+__version__ = "1.2.0"

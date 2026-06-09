@@ -12,6 +12,7 @@ from .bars import render_stacked_bar
 from .colors import assign_colors
 from .formatting import (
     ColumnSet,
+    _format_count,
     _format_size,
     resolve_columns,
 )
@@ -81,7 +82,7 @@ def render_chart(
         console.print(table)
         console.print(
             Padding(
-                f"[dim]{_format_size(total_sz)} across {len(infos)} distinct types[/dim]",
+                f"[dim]{_format_size(total_sz)} across {_format_count(len(infos))} distinct types[/dim]",
                 (1, 0, 0, 0),
             )
         )
@@ -91,7 +92,7 @@ def render_chart(
         console.print(table)
         console.print(
             Padding(
-                f"[dim]{total_files} files across {len(infos)} distinct types[/dim]",
+                f"[dim]{_format_count(total_files)} files across {_format_count(len(infos))} distinct types[/dim]",
                 (1, 0, 0, 0),
             )
         )

@@ -103,8 +103,8 @@ def scan_directory(
             extension=ext,
             count=count,
             total_size=sz,
-            percentage=round((count / total_files) * 100, 1),
-            size_percentage=round((sz / total_size_all) * 100, 1)
+            percentage=round((count / total_files) * 100, 2),
+            size_percentage=round((sz / total_size_all) * 100, 2)
             if total_size_all
             else 0.0,
         )

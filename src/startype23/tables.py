@@ -20,6 +20,7 @@ from .formatting import (
     _COL_SIZE,
     _COL_SIZE_PCT,
     ColumnSet,
+    _format_count,
     _format_size,
     normalize_extension,
     resolve_columns,
@@ -75,9 +76,9 @@ def render_table(
         if _COL_FILETYPE in show_cols:
             row.append(ftype)
         if _COL_COUNT in show_cols:
-            row.append(str(info.count))
+            row.append(_format_count(info.count))
         if _COL_PERCENTAGE in show_cols:
-            row.append(f"{info.percentage}%")
+            row.append(f"{info.percentage:.2f}%")
         if _COL_DISTRIBUTION in show_cols:
             row.append(_make_mini_bar(bar_fill, hex_color))
 
@@ -129,11 +130,11 @@ def render_size_table(
         if _COL_FILETYPE in show_cols:
             row.append(ftype)
         if _COL_COUNT in show_cols:
-            row.append(str(info.count))
+            row.append(_format_count(info.count))
         if _COL_SIZE in show_cols:
             row.append(_format_size(info.total_size))
         if _COL_SIZE_PCT in show_cols:
-            row.append(f"{info.size_percentage}%")
+            row.append(f"{info.size_percentage:.2f}%")
         if _COL_DISTRIBUTION in show_cols:
             row.append(_make_mini_bar(bar_fill, hex_color))
 
@@ -186,7 +187,7 @@ def render_explain_table(
     )
     table.add_column("Extension", style="bold", no_wrap=True)
     table.add_column("File Type", no_wrap=True)
-    table.add_column("Description")
+    table.add_column("Description", ratio=1)
 
     table.add_row(ext, ftype, desc)
 
