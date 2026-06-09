@@ -1,6 +1,6 @@
 [project]
 name = "startype23"
-version = "1.0.0"
+version = "1.1.0"
 description = "A CLI tool that analyzes a directory and displays a colourful chart of file type distribution."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -33,6 +33,7 @@ Source = "https://github.com/startype23/startype23"
 
 [project.scripts]
 startype23 = "startype23.cli:main"
+st23 = "startype23.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -19,7 +19,7 @@ colourful file-type distribution chart in the terminal.
 ## Usage
 
 ```
-uv run startype23                         scan current directory
+uv run startype23 (or st23)              scan current directory
 uv run startype23 --size                  scan by disk size
 uv run startype23 --path /some/dir        scan a specific directory
 uv run startype23 --include-hidden        include dotfiles
