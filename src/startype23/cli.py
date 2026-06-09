@@ -5,14 +5,39 @@ from pathlib import Path
 import click
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from . import __version__
 from .analyzer import scan_directory
 from .charts import render_chart
+from .logo import render_logo
 from .tables import render_explain_table
 
 _NONE = "__none__"
 
 
+def _print_logo() -> None:
+    """Print the logo and exit."""
+    from rich.console import Console
+
+    console = Console()
+    console.print(render_logo())
+
+
 @click.command()
+@click.version_option(
+    __version__,
+    "-v",
+    "--version",
+    prog_name="StarType23",
+    message="%(prog)s %(version)s",
+)
+@click.option(
+    "--logo",
+    is_flag=True,
+    default=False,
+    expose_value=False,
+    callback=lambda ctx, param, value: _print_logo() or ctx.exit() if value else None,
+    help="Display the StarType23 logo.",
+)
 @click.option(
     "--path",
     default=".",
