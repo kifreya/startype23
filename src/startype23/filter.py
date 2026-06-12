@@ -5,6 +5,8 @@ from collections.abc import Sequence
 
 from .analyzer import FileTypeInfo
 
+__all__ = ["filter_infos"]
+
 
 def filter_infos(
     infos: Sequence[FileTypeInfo],

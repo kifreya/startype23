@@ -5,6 +5,8 @@ from collections.abc import Sequence
 
 from .analyzer import FileTypeInfo
 
+__all__ = ["assign_colors"]
+
 # Golden-angle hue spacing -- optimal around the colour wheel.
 _GOLDEN_ANGLE = 137.508  # degrees
 
@@ -19,6 +21,17 @@ _SAT_RANGE = 0.25  # sat varies 0.60 - 0.85
 _LIT_BASE = 0.45
 _LIT_RANGE = 0.25  # lit varies 0.45 - 0.70
 
+# Pre-computed gamma-to-linear lookup for the 0-255 sRGB range.
+# 0.04045 in linear corresponds to ~0.0031308 in gamma space, which maps to
+# channel value ~10.  Values above ~10 use the pow formula.
+_LINEAR_CACHE: list[float] = []
+for i in range(256):
+    c = i / 255.0
+    if c <= 0.04045:
+        _LINEAR_CACHE.append(c / 12.92)
+    else:
+        _LINEAR_CACHE.append(((c + 0.055) / 1.055) ** 2.4)
+
 
 def _hsl_to_hex(hue_deg: float, saturation: float, lightness: float) -> str:
     """Convert HLS values to a hex colour string like ``"#7CB342"``."""
@@ -27,14 +40,14 @@ def _hsl_to_hex(hue_deg: float, saturation: float, lightness: float) -> str:
 
 
 def _luminance(hex_color: str) -> float:
-    """Relative luminance of a hex colour (WCAG sRGB formula)."""
+    """Relative luminance of a hex colour (WCAG sRGB formula), cached linearisation."""
     h = hex_color.lstrip("#")
-    r, g, b = [int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4)]
-
-    def linearise(c: float) -> float:
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-
-    return 0.2126 * linearise(r) + 0.7152 * linearise(g) + 0.0722 * linearise(b)
+    r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
+    return (
+        0.2126 * _LINEAR_CACHE[r]
+        + 0.7152 * _LINEAR_CACHE[g]
+        + 0.0722 * _LINEAR_CACHE[b]
+    )
 
 
 def _generate_colour(n: int) -> str:
@@ -69,18 +82,22 @@ def _generate_colour(n: int) -> str:
 
 def assign_colors(
     infos: Sequence[FileTypeInfo],
-    user_colors: list[str] | None = None,
+    user_colors: Sequence[str] | None = None,
 ) -> dict[str, str]:
     """Map every extension to a colour.
 
-    When *user_colors* is provided and contains enough entries, they are used
-    directly (cycled if fewer than needed rather than failing).  Otherwise
+    When *user_colors* is provided they are cycled (``idx % len``).  Otherwise
     colours are generated via golden-ratio distribution across HSL dimensions.
+
+    This function is *pure* -- it does not mutate any input and has no side
+    effects.  Colour-to-extension mapping is determined solely by iteration
+    order.
     """
     mapping: dict[str, str] = {}
     if user_colors:
+        n = len(user_colors)
         for idx, info in enumerate(infos):
-            mapping[info.extension] = user_colors[idx % len(user_colors)]
+            mapping[info.extension] = user_colors[idx % n]
     else:
         for idx, info in enumerate(infos):
             mapping[info.extension] = _generate_colour(idx)

@@ -1,30 +1,34 @@
 """Directory traversal and file extension aggregation."""
 
 import os
-from collections import Counter
+from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
+
+__all__ = ["FileTypeInfo", "scan_directory", "DEFAULT_EXCLUDE_DIRS"]
 
 # Default directory names to skip during traversal.
-DEFAULT_EXCLUDE_DIRS: set[str] = {
-    ".git",
-    ".hg",
-    ".svn",
-    ".venv",
-    "venv",
-    ".tox",
-    ".mypy_cache",
-    ".pytest_cache",
-    "__pycache__",
-    "node_modules",
-    ".idea",
-    ".vscode",
-    ".DS_Store",
-}
+DEFAULT_EXCLUDE_DIRS: frozenset[str] = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "venv",
+        ".tox",
+        ".mypy_cache",
+        ".pytest_cache",
+        "__pycache__",
+        "node_modules",
+        ".idea",
+        ".vscode",
+        ".DS_Store",
+    }
+)
 
 
-@dataclass
+@dataclass(slots=True)
 class FileTypeInfo:
     """Aggregated statistics for a single file extension."""
 
@@ -67,12 +71,12 @@ def scan_directory(
         exclude_dirs = DEFAULT_EXCLUDE_DIRS
 
     counter: Counter[str] = Counter()
-    size_map: dict[str, int] = {}
+    size_map: dict[str, int] = defaultdict(int)
 
     for dirpath_str, dirnames, filenames in os.walk(root):
         dirpath = Path(dirpath_str)
 
-        # Filter out directories we should skip.
+        # Filter out directories we should skip -- in-place for os.walk.
         dirnames[:] = [
             d
             for d in dirnames
@@ -87,8 +91,7 @@ def scan_directory(
             counter[ext] += 1
 
             try:
-                filepath = dirpath / filename
-                size_map[ext] = size_map.get(ext, 0) + filepath.stat().st_size
+                size_map[ext] += (dirpath / filename).stat().st_size
             except OSError:
                 pass
 
@@ -103,17 +106,18 @@ def scan_directory(
 
     results: list[FileTypeInfo] = []
     for ext, count in counter.most_common():
-        sz = size_map.get(ext, 0)
-        info = FileTypeInfo(
-            extension=ext,
-            count=count,
-            total_size=sz,
-            percentage=round((count / total_files) * 100, 2),
-            size_percentage=round((sz / total_size_all) * 100, 2)
-            if total_size_all
-            else 0.0,
+        sz = size_map[ext]
+        results.append(
+            FileTypeInfo(
+                extension=ext,
+                count=count,
+                total_size=sz,
+                percentage=round((count / total_files) * 100, 2),
+                size_percentage=round((sz / total_size_all) * 100, 2)
+                if total_size_all
+                else 0.0,
+            )
         )
-        results.append(info)
 
     return results
 

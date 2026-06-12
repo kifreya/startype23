@@ -3,6 +3,8 @@
 import re
 from pathlib import Path
 
+__all__ = ["resolve_user_colors"]
+
 _HEX_RE = re.compile(r"^#?([0-9a-fA-F]{6})$")
 
 

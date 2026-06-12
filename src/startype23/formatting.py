@@ -1,6 +1,23 @@
 """Formatting utilities and column-visibility helpers."""
 
-_SIZE_SUFFIXES = ["B", "KB", "MB", "GB", "TB"]
+__all__ = [
+    "ColumnSet",
+    "_COL_EXTENSION",
+    "_COL_FILETYPE",
+    "_COL_COUNT",
+    "_COL_PERCENTAGE",
+    "_COL_DISTRIBUTION",
+    "_COL_SIZE",
+    "_COL_SIZE_PCT",
+    "_ALL_COLUMNS",
+    "_ALL_SIZE_COLUMNS",
+    "_format_size",
+    "_format_count",
+    "normalize_extension",
+    "resolve_columns",
+]
+
+_SIZE_SUFFIXES = ("B", "KB", "MB", "GB", "TB")
 
 ColumnSet = set[str]
 
@@ -47,17 +64,10 @@ def _format_size(size_bytes: int) -> str:
 def _format_count(n: int) -> str:
     """Format an integer with French spacing (space every 3 digits).
 
-    ``1234567`` becomes ``"1 234 567"``.
+    ``1_234_567`` becomes ``"1 234 567"``.  Uses CPython's fast C-based
+    ``format()`` under the hood -- O(log n).
     """
-    if n < 0:
-        return f"-{_format_count(-n)}"
-    s = str(n)
-    parts = []
-    while len(s) > 3:
-        parts.append(s[-3:])
-        s = s[:-3]
-    parts.append(s)
-    return " ".join(reversed(parts))
+    return format(n, ",").replace(",", " ")
 
 
 def normalize_extension(ext: str) -> str:

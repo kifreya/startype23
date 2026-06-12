@@ -7,6 +7,8 @@ from rich.text import Text
 
 from .analyzer import FileTypeInfo
 
+__all__ = ["render_stacked_bar"]
+
 
 def render_stacked_bar(
     infos: Sequence[FileTypeInfo],

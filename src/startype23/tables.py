@@ -26,13 +26,117 @@ from .formatting import (
     resolve_columns,
 )
 
+__all__ = [
+    "render_table",
+    "render_size_table",
+    "render_legend",
+    "render_explain_table",
+]
+
 
 def _make_mini_bar(fill: int, hex_color: str) -> Text:
     """Build a short coloured block bar for table cells."""
-    bar = Text()
-    num_blocks = fill // 2
-    _ = bar.append("\u2593" * num_blocks, style=Style(color=hex_color))
-    return bar
+    return Text("\u2593" * (fill // 2), style=Style(color=hex_color))
+
+
+# Mapping of column-id -> (header_label, value_getter, justify, key)
+# value_getter receives (info, ftype) and returns a renderable string.
+_CT_COLS = {
+    _COL_FILETYPE: ("File Type", lambda info, ftype: ftype, None, False),
+    _COL_COUNT: ("Count", lambda info, _: _format_count(info.count), "right", False),
+    _COL_PERCENTAGE: (
+        "Percentage",
+        lambda info, _: f"{info.percentage:.2f}%",
+        "right",
+        False,
+    ),
+    _COL_DISTRIBUTION: ("Distribution", lambda info, _: ..., "left", True),
+}
+
+_SZ_COLS = {
+    _COL_FILETYPE: ("File Type", lambda info, ftype: ftype, None, False),
+    _COL_COUNT: ("Count", lambda info, _: _format_count(info.count), "right", False),
+    _COL_SIZE: (
+        "Total Size",
+        lambda info, _: _format_size(info.total_size),
+        "right",
+        False,
+    ),
+    _COL_SIZE_PCT: (
+        "Size %",
+        lambda info, _: f"{info.size_percentage:.2f}%",
+        "right",
+        False,
+    ),
+    _COL_DISTRIBUTION: ("Distribution", lambda info, _: ..., "left", True),
+}
+
+
+def _build_table(
+    infos: Sequence[FileTypeInfo],
+    colors: dict[str, str],
+    bar_width: int,
+    columns: ColumnSet | None,
+    all_available: ColumnSet,
+    col_specs: dict,
+    title: str,
+    borderless: bool,
+    bar_attr: str = "count",
+) -> Table:
+    """Shared table builder used by both count and size renderers.
+
+    ``col_specs`` maps column-ids to ``(header_label, value_fn, justify, is_bar)``
+    tuples.  ``is_bar`` signals that the column renders a mini distribution bar,
+    which requires special fill-width logic.
+
+    ``bar_attr`` is the ``FileTypeInfo`` attribute name used for bar sizing,
+    either ``"count"`` or ``"total_size"``.
+    """
+    show_cols = resolve_columns(columns, all_available)
+
+    table = Table(
+        title=title,
+        title_style="bold",
+        expand=False,
+        padding=(0, 1),
+        show_header=True,
+        header_style="bold",
+        show_edge=not borderless,
+        box=rich_box.SIMPLE if borderless else None,
+    )
+
+    table.add_column("Extension", style="bold", no_wrap=True)
+
+    visible_specs = [(cid, col_specs[cid]) for cid in col_specs if cid in show_cols]
+    for cid, (label, _value_fn, justify, _is_bar) in visible_specs:
+        kw = {}
+        if justify:
+            kw["justify"] = justify
+        if cid == _COL_DISTRIBUTION:
+            kw["min_width"] = bar_width + 2
+        table.add_column(label, no_wrap=True, **kw)
+
+    max_val = max(getattr(i, bar_attr) for i in infos) or 1
+
+    lookup_cache = {}  # extension -> filetype string
+
+    for info in infos:
+        ext = info.extension
+        if ext not in lookup_cache:
+            lookup_cache[ext] = EXTENSION_INFO.get(ext, ("Unknown", ""))[0]
+        ftype = lookup_cache[ext]
+
+        row = [ext]
+        for cid, (_label, value_fn, _justify, is_bar) in visible_specs:
+            if is_bar:
+                fill = round(getattr(info, bar_attr) / max_val * bar_width)
+                row.append(_make_mini_bar(max(1, fill), colors.get(ext, "#888888")))
+            else:
+                row.append(value_fn(info, ftype))
+
+        table.add_row(*row)
+
+    return table
 
 
 def render_table(
@@ -43,51 +147,17 @@ def render_table(
     borderless: bool = False,
 ) -> Table:
     """Create a rich ``Table`` with per-extension details and a mini bar (by count)."""
-    show_cols = resolve_columns(columns, _ALL_COLUMNS)
-
-    table = Table(
-        title="File Type Distribution (by Count)",
-        title_style="bold",
-        expand=False,
-        padding=(0, 1),
-        show_header=True,
-        header_style="bold",
-        show_edge=not borderless,
-        box=rich_box.SIMPLE if borderless else None,
+    return _build_table(
+        infos,
+        colors,
+        bar_width,
+        columns,
+        _ALL_COLUMNS,
+        _CT_COLS,
+        "File Type Distribution (by Count)",
+        borderless,
+        bar_attr="count",
     )
-
-    table.add_column("Extension", style="bold", no_wrap=True)
-    if _COL_FILETYPE in show_cols:
-        table.add_column("File Type", no_wrap=True)
-    if _COL_COUNT in show_cols:
-        table.add_column("Count", justify="right")
-    if _COL_PERCENTAGE in show_cols:
-        table.add_column("Percentage", justify="right")
-    if _COL_DISTRIBUTION in show_cols:
-        table.add_column("Distribution", justify="left", min_width=bar_width + 2)
-
-    max_count = max(i.count for i in infos) if infos else 1
-
-    for info in infos:
-        hex_color = colors.get(info.extension, "#888888")
-        bar_fill = round(info.count / max_count * bar_width) if max_count else 0
-        bar_fill = max(1, bar_fill)
-
-        ftype, _desc = EXTENSION_INFO.get(info.extension, ("Unknown", ""))
-
-        row = [info.extension]
-        if _COL_FILETYPE in show_cols:
-            row.append(ftype)
-        if _COL_COUNT in show_cols:
-            row.append(_format_count(info.count))
-        if _COL_PERCENTAGE in show_cols:
-            row.append(f"{info.percentage:.2f}%")
-        if _COL_DISTRIBUTION in show_cols:
-            row.append(_make_mini_bar(bar_fill, hex_color))
-
-        table.add_row(*row)
-
-    return table
 
 
 def render_size_table(
@@ -98,55 +168,17 @@ def render_size_table(
     borderless: bool = False,
 ) -> Table:
     """Create a rich ``Table`` showing size distribution per extension."""
-    show_cols = resolve_columns(columns, _ALL_SIZE_COLUMNS)
-
-    table = Table(
-        title="File Type Distribution (by Size)",
-        title_style="bold",
-        expand=False,
-        padding=(0, 1),
-        show_header=True,
-        header_style="bold",
-        show_edge=not borderless,
-        box=rich_box.SIMPLE if borderless else None,
+    return _build_table(
+        infos,
+        colors,
+        bar_width,
+        columns,
+        _ALL_SIZE_COLUMNS,
+        _SZ_COLS,
+        "File Type Distribution (by Size)",
+        borderless,
+        bar_attr="total_size",
     )
-
-    table.add_column("Extension", style="bold", no_wrap=True)
-    if _COL_FILETYPE in show_cols:
-        table.add_column("File Type", no_wrap=True)
-    if _COL_COUNT in show_cols:
-        table.add_column("Count", justify="right")
-    if _COL_SIZE in show_cols:
-        table.add_column("Total Size", justify="right")
-    if _COL_SIZE_PCT in show_cols:
-        table.add_column("Size %", justify="right")
-    if _COL_DISTRIBUTION in show_cols:
-        table.add_column("Distribution", justify="left", min_width=bar_width + 2)
-
-    max_size = max(i.total_size for i in infos) if infos else 1
-
-    for info in infos:
-        hex_color = colors.get(info.extension, "#888888")
-        bar_fill = round(info.total_size / max_size * bar_width) if max_size else 0
-        bar_fill = max(1, bar_fill)
-
-        ftype, _desc = EXTENSION_INFO.get(info.extension, ("Unknown", ""))
-
-        row = [info.extension]
-        if _COL_FILETYPE in show_cols:
-            row.append(ftype)
-        if _COL_COUNT in show_cols:
-            row.append(_format_count(info.count))
-        if _COL_SIZE in show_cols:
-            row.append(_format_size(info.total_size))
-        if _COL_SIZE_PCT in show_cols:
-            row.append(f"{info.size_percentage:.2f}%")
-        if _COL_DISTRIBUTION in show_cols:
-            row.append(_make_mini_bar(bar_fill, hex_color))
-
-        table.add_row(*row)
-
-    return table
 
 
 def render_legend(

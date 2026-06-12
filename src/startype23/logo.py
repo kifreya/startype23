@@ -4,6 +4,8 @@ from rich.text import Text
 
 from . import __version__
 
+__all__ = ["render_logo"]
+
 _DOTTED = "\u2591"  # light shade -- gives a dotted/stippled appearance
 
 

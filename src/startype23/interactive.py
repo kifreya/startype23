@@ -10,6 +10,8 @@ from .charts import render_chart
 from .filter import filter_infos
 from .user_colors import resolve_user_colors
 
+__all__ = ["run_interactive"]
+
 
 def _show_help(console: Console) -> None:
     """Print available commands."""
@@ -47,6 +49,38 @@ def run_interactive() -> None:
     }
     colour_args: list[str] = []
 
+    # Dispatch table: maps flag name -> callable that mutates state.
+    def _toggle(key: str) -> None:
+        state[key] = not state[key]
+        console.print(f"  {key} = {state[key]}")
+
+    def _set_path(val: str) -> None:
+        state["path"] = val
+        console.print(f"  path = {val}")
+
+    def _set_filter(val: str) -> None:
+        state["filter"] = val
+        console.print(f"  filter = {val}")
+
+    def _add_colour(val: str) -> None:
+        colour_args.append(val)
+
+    _TOGGLE_FLAGS = frozenset(
+        {
+            "--size",
+            "--filetype",
+            "--count",
+            "--percentage",
+            "--distribution",
+            "--borderless",
+        }
+    )
+
+    _SET_FLAGS = {
+        "--path": _set_path,
+        "--filter": _set_filter,
+    }
+
     console.print()
     console.print(Text("StarType23 interactive mode", style="bold underline"))
     console.print("Type flags, then 'run' to scan. Type 'help' for commands.")
@@ -66,52 +100,24 @@ def run_interactive() -> None:
             _show_help(console)
             continue
 
-        parts = line.split()
-        for part in parts:
-            if part == "--size":
-                state["size"] = not state["size"]
-                console.print(f"  size = {state['size']}")
-            elif part == "--filetype":
-                state["filetype"] = not state["filetype"]
-                console.print(f"  filetype = {state['filetype']}")
-            elif part == "--count":
-                state["count"] = not state["count"]
-                console.print(f"  count = {state['count']}")
-            elif part == "--percentage":
-                state["percentage"] = not state["percentage"]
-                console.print(f"  percentage = {state['percentage']}")
-            elif part == "--distribution":
-                state["distribution"] = not state["distribution"]
-                console.print(f"  distribution = {state['distribution']}")
-            elif part == "--borderless":
-                state["borderless"] = not state["borderless"]
-                console.print(f"  borderless = {state['borderless']}")
-            elif part.startswith("--path="):
-                state["path"] = part.split("=", 1)[1]
-                console.print(f"  path = {state['path']}")
-            elif part.startswith("--filter="):
-                state["filter"] = part.split("=", 1)[1]
-                console.print(f"  filter = {state['filter']}")
-            elif part == "--path" or part == "--filter":
-                # Value follows in next token -- handled below
+        for token in line.split():
+            if token in _TOGGLE_FLAGS:
+                _toggle(token.lstrip("-").replace("-", "_"))
+            elif token.startswith("--path=") or token.startswith("--filter="):
+                flag, _, val = token.partition("=")
+                _SET_FLAGS[flag](val)
+            elif token in _SET_FLAGS:
+                # Value follows as next token -- skip, handled by lookahead below
                 pass
-            elif part.startswith("--colors"):
-                colour_args.append(part)
-            else:
-                # Check for --path <val> or --filter <val> where value is
-                # the current part and is a standalone token
+            elif token.startswith("--colors"):
+                _add_colour(token)
+            elif token.startswith("-"):
+                # Could be a value for the previous flag
                 pass
 
     # Build column set from toggled flags
     col_values = [
-        v
-        for k, v in [
-            ("filetype", state["filetype"]),
-            ("count", state["count"]),
-            ("percentage", state["percentage"]),
-            ("distribution", state["distribution"]),
-        ]
-        if v
+        k for k in ("filetype", "count", "percentage", "distribution") if state[k]
     ]
     columns: set[str] | None = set(col_values) if col_values else None
 
