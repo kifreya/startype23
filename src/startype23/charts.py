@@ -26,6 +26,7 @@ def render_chart(
     columns: ColumnSet | None = None,
     size_mode: bool = False,
     user_colors: list[str] | None = None,
+    borderless: bool = False,
 ) -> None:
     """Render the full file-type distribution chart on *console*.
 
@@ -76,7 +77,11 @@ def render_chart(
     # --- Table ---
     if size_mode:
         table = render_size_table(
-            infos, colors, bar_width=table_bar_width, columns=columns
+            infos,
+            colors,
+            bar_width=table_bar_width,
+            columns=columns,
+            borderless=borderless,
         )
         total_sz = sum(i.total_size for i in infos)
         console.print(table)
@@ -87,7 +92,13 @@ def render_chart(
             )
         )
     else:
-        table = render_table(infos, colors, bar_width=table_bar_width, columns=columns)
+        table = render_table(
+            infos,
+            colors,
+            bar_width=table_bar_width,
+            columns=columns,
+            borderless=borderless,
+        )
         total_files = sum(i.count for i in infos)
         console.print(table)
         console.print(

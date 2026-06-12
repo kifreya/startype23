@@ -107,6 +107,12 @@ def _print_logo() -> None:
     multiple=True,
     help="Hex colour codes or path to a colour file. Repeatable. Accepts # or without.",
 )
+@click.option(
+    "--borderless",
+    is_flag=True,
+    default=False,
+    help="Render tables without borders.",
+)
 def main(
     path: str = ".",
     exclude: tuple[str, ...] | None = None,
@@ -118,6 +124,7 @@ def main(
     col_percentage: str | None = _NONE,
     col_distribution: str | None = _NONE,
     colors: tuple[str, ...] | None = None,
+    borderless: bool = False,
 ) -> None:
     """Analyze file types in a directory and display a colourful chart."""
     if explain is not None:
@@ -166,4 +173,5 @@ def main(
         columns=columns,
         size_mode=size,
         user_colors=user_colors,
+        borderless=borderless,
     )

@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 
+from rich import box as rich_box
 from rich.console import Console
 from rich.style import Style
 from rich.table import Table
@@ -39,6 +40,7 @@ def render_table(
     colors: dict[str, str],
     bar_width: int = 40,
     columns: ColumnSet | None = None,
+    borderless: bool = False,
 ) -> Table:
     """Create a rich ``Table`` with per-extension details and a mini bar (by count)."""
     show_cols = resolve_columns(columns, _ALL_COLUMNS)
@@ -50,6 +52,8 @@ def render_table(
         padding=(0, 1),
         show_header=True,
         header_style="bold",
+        show_edge=not borderless,
+        box=rich_box.SIMPLE if borderless else None,
     )
 
     table.add_column("Extension", style="bold", no_wrap=True)
@@ -91,6 +95,7 @@ def render_size_table(
     colors: dict[str, str],
     bar_width: int = 40,
     columns: ColumnSet | None = None,
+    borderless: bool = False,
 ) -> Table:
     """Create a rich ``Table`` showing size distribution per extension."""
     show_cols = resolve_columns(columns, _ALL_SIZE_COLUMNS)
@@ -102,6 +107,8 @@ def render_size_table(
         padding=(0, 1),
         show_header=True,
         header_style="bold",
+        show_edge=not borderless,
+        box=rich_box.SIMPLE if borderless else None,
     )
 
     table.add_column("Extension", style="bold", no_wrap=True)
@@ -183,6 +190,7 @@ def render_explain_table(
         padding=(0, 1),
         show_header=True,
         header_style="bold",
+        show_edge=False,
     )
     table.add_column("Extension", style="bold", no_wrap=True)
     table.add_column("File Type", no_wrap=True)
