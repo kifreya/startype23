@@ -10,6 +10,7 @@ from .analyzer import scan_directory
 from .charts import render_chart
 from .logo import render_logo
 from .tables import render_explain_table
+from .user_colors import resolve_user_colors
 
 _NONE = "__none__"
 
@@ -101,6 +102,11 @@ def _print_logo() -> None:
     default=_NONE,
     help="Show the Distribution column (use alone to show only selected columns).",
 )
+@click.option(
+    "--colors",
+    multiple=True,
+    help="Hex colour codes or path to a colour file. Repeatable. Accepts # or without.",
+)
 def main(
     path: str = ".",
     exclude: tuple[str, ...] | None = None,
@@ -111,6 +117,7 @@ def main(
     col_count: str | None = _NONE,
     col_percentage: str | None = _NONE,
     col_distribution: str | None = _NONE,
+    colors: tuple[str, ...] | None = None,
 ) -> None:
     """Analyze file types in a directory and display a colourful chart."""
     if explain is not None:
@@ -149,4 +156,14 @@ def main(
     ]
     columns: set[str] | None = set(col_values) if col_values else None
 
-    render_chart(infos, root_label=str(target), columns=columns, size_mode=size)
+    user_colors, color_warning = resolve_user_colors(colors, len(infos))
+    if color_warning:
+        click.echo(color_warning, err=True)
+
+    render_chart(
+        infos,
+        root_label=str(target),
+        columns=columns,
+        size_mode=size,
+        user_colors=user_colors,
+    )

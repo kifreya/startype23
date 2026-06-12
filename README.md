@@ -17,6 +17,7 @@ colourful file-type distribution chart in the terminal.
 - Skips `.git`, `.venv`, `node_modules`, `__pycache__`, and similar by
   default.
 - Flat-design pastel colour palette (no neon).
+- Custom colour palette support via ``--colors`` (inline hex codes or file).
 
 ## Installation
 
@@ -39,6 +40,9 @@ startype23 --explain .py                look up an extension
 startype23 --explain py                 leading dot is optional
 startype23 --exclude build              skip extra directories
 startype23 --count --percentage         show only selected columns
+startype23 --colors FF0000 --colors 00FF00   custom colours
+startype23 --colors "#FF0000,#00FF00"       comma-separated in one string
+startype23 --colors /path/to/colors.txt     load from file
 ```
 
 | Flag                       | Description                                   |
@@ -53,9 +57,16 @@ startype23 --count --percentage         show only selected columns
 | `--count` / `-c`           | Show the Count column                         |
 | `--percentage` / `-p`      | Show the Percentage column                    |
 | `--distribution` / `-d`    | Show the Distribution bar column              |
+| `--colors`                 | Hex colour codes, one per flag, comma/space/semicolon/colon separated, or path to a colour file |
 
 When no column flags are given, all columns show.  When one or more are
 given, only those (plus Extension) are shown.
+
+Custom colours can be provided inline or via a text file. The ``#`` prefix is
+optional. If fewer colours are given than file types found, the tool falls
+back to the built-in palette and prints a warning.  A default colour file at
+``$HOME/.config/startype23/colors.txt`` is loaded automatically if no
+``--colors`` flag is given.
 
 ## Tools used to build this project
 

@@ -25,6 +25,7 @@ def render_chart(
     console: Console | None = None,
     columns: ColumnSet | None = None,
     size_mode: bool = False,
+    user_colors: list[str] | None = None,
 ) -> None:
     """Render the full file-type distribution chart on *console*.
 
@@ -52,7 +53,7 @@ def render_chart(
     stacked_width = min(term_width - 4, 80)
     table_bar_width = min(term_width - 36, 40)
 
-    colors = assign_colors(infos)
+    colors = assign_colors(infos, user_colors)
 
     # --- Heading ---
     mode_label = "File Size Distribution" if size_mode else "File Type Distribution"

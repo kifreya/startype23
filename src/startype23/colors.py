@@ -67,14 +67,21 @@ def _generate_colour(n: int) -> str:
     return hex_colour
 
 
-def assign_colors(infos: Sequence[FileTypeInfo]) -> dict[str, str]:
-    """Map every extension to a visually distinct, background-safe colour.
+def assign_colors(
+    infos: Sequence[FileTypeInfo],
+    user_colors: list[str] | None = None,
+) -> dict[str, str]:
+    """Map every extension to a colour.
 
-    Colours are generated using golden-ratio-based distribution across all
-    three HSL dimensions (hue, saturation, lightness), producing clear
-    distinction well beyond 18 file types.
+    When *user_colors* is provided and contains enough entries, they are used
+    directly (cycled if fewer than needed rather than failing).  Otherwise
+    colours are generated via golden-ratio distribution across HSL dimensions.
     """
     mapping: dict[str, str] = {}
-    for idx, info in enumerate(infos):
-        mapping[info.extension] = _generate_colour(idx)
+    if user_colors:
+        for idx, info in enumerate(infos):
+            mapping[info.extension] = user_colors[idx % len(user_colors)]
+    else:
+        for idx, info in enumerate(infos):
+            mapping[info.extension] = _generate_colour(idx)
     return mapping
