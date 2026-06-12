@@ -8,6 +8,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from . import __version__
 from .analyzer import scan_directory
 from .charts import render_chart
+from .filter import filter_infos
+from .interactive import run_interactive
 from .logo import render_logo
 from .tables import render_explain_table
 from .user_colors import resolve_user_colors
@@ -113,6 +115,18 @@ def _print_logo() -> None:
     default=False,
     help="Render tables without borders.",
 )
+@click.option(
+    "--filter",
+    "filter_str",
+    default=None,
+    help="Filter by extensions (comma, period, colon, semicolon, newline separated).",
+)
+@click.option(
+    "--interactive",
+    is_flag=True,
+    default=False,
+    help="Launch interactive REPL mode for building flags.",
+)
 def main(
     path: str = ".",
     exclude: tuple[str, ...] | None = None,
@@ -125,10 +139,16 @@ def main(
     col_distribution: str | None = _NONE,
     colors: tuple[str, ...] | None = None,
     borderless: bool = False,
+    filter_str: str | None = None,
+    interactive: bool = False,
 ) -> None:
     """Analyze file types in a directory and display a colourful chart."""
     if explain is not None:
         render_explain_table(explain)
+        return
+
+    if interactive:
+        run_interactive()
         return
 
     target = Path(path).resolve()
@@ -155,6 +175,13 @@ def main(
     except NotADirectoryError as exc:
         click.echo(f"Error: {exc}", err=True)
         raise SystemExit(1)
+
+    if filter_str:
+        filtered = filter_infos(infos, filter_str)
+        if not filtered:
+            click.echo("No file types matched the filter.", err=True)
+            raise SystemExit(1)
+        infos = filtered
 
     col_values = [
         v

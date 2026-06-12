@@ -43,6 +43,8 @@ startype23 --count --percentage         show only selected columns
 startype23 --colors FF0000 --colors 00FF00   custom colours
 startype23 --colors "#FF0000,#00FF00"       comma-separated in one string
 startype23 --colors /path/to/colors.txt     load from file
+startype23 --filter ".py,.md"              show only certain file types
+startype23 --interactive                   build flags in a REPL
 ```
 
 | Flag                       | Description                                   |
@@ -58,6 +60,9 @@ startype23 --colors /path/to/colors.txt     load from file
 | `--percentage` / `-p`      | Show the Percentage column                    |
 | `--distribution` / `-d`    | Show the Distribution bar column              |
 | `--colors`                 | Hex colour codes, one per flag, comma/space/semicolon/colon separated, or path to a colour file |
+| `--borderless`             | Render tables without outer borders              |
+| `--filter`                 | Show only matching extensions (comma, period, colon, semicolon, newline separated) |
+| `--interactive`            | Launch interactive REPL mode for building flags  |
 
 When no column flags are given, all columns show.  When one or more are
 given, only those (plus Extension) are shown.
@@ -67,6 +72,12 @@ optional. If fewer colours are given than file types found, the tool falls
 back to the built-in palette and prints a warning.  A default colour file at
 ``$HOME/.config/startype23/colors.txt`` is loaded automatically if no
 ``--colors`` flag is given.
+
+### Interactive mode
+
+``--interactive`` opens a REPL where flags are toggled one at a time, then
+``run`` executes the scan.  Type ``help`` within the REPL for available
+commands.
 
 ## Tools used to build this project
 
